@@ -1,5 +1,5 @@
 // src/components/report/CoveragePrecision.tsx
-import type { CoverageApiResponse } from "@/types/analysis";
+import type { CoverageApiResponse } from "@/types/report";
 
 interface CoveragePrecisionProps {
   data: CoverageApiResponse | null;
@@ -12,7 +12,8 @@ export function CoveragePrecision({ data }: CoveragePrecisionProps) {
   const offset = circumference - (data.coverage_section.chart_percent / 100) * circumference;
 
   return (
-    <section className="relative block w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+    // [Fix] Removed 'block' class to resolve conflict with 'flex'
+    <section className="relative w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
       
       <div className="flex flex-col h-full justify-center space-y-10 md:space-y-20 max-w-6xl mx-auto w-full">
         

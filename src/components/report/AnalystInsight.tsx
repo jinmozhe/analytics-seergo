@@ -1,5 +1,5 @@
 // src/components/report/AnalystInsight.tsx
-import type { InsightApiResponse } from "@/types/analysis";
+import type { InsightApiResponse } from "@/types/report";
 
 interface AnalystInsightProps {
   data: InsightApiResponse | null;
@@ -9,9 +9,10 @@ export function AnalystInsight({ data }: AnalystInsightProps) {
   if (!data) return <div className="py-20 text-center text-slate-600">Loading Insights...</div>;
 
   return (
-    <section className="relative block w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+    // [Fix] Removed 'block' class to resolve conflict with 'flex'
+    <section className="relative w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
       
-      {/* Background (省略) */}
+      {/* Background */}
       <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
          {/* ... Orbs ... */}
       </div>

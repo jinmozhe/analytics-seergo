@@ -1,12 +1,23 @@
+// src/components/home/ModelsDashboard.tsx
 import { useState } from "react";
-import { MODELS_DATA } from "@/data/home-content";
-import type { ModelTab } from "@/types/home";
+import type { HomeModelsData, ModelTab } from "@/types/home";
 
-export function ModelsDashboard() {
+interface ModelsDashboardProps {
+  data: HomeModelsData | null;
+}
+
+export function ModelsDashboard({ data }: ModelsDashboardProps) {
+  // 1. 状态管理 (Hook 顺序一致)
+  // 默认选中 profit，如果数据加载后 activeTab 不在列表里，逻辑会在下面 handle
   const [activeTab, setActiveTab] = useState<ModelTab>("profit");
-  const activeModel = MODELS_DATA[activeTab];
 
-  // 辅助函数：渲染对应模型的动态可视化图形
+  // 2. 加载状态
+  if (!data) return <div className="py-24 text-center text-slate-600">Loading Models...</div>;
+
+  // 3. 动态查找当前选中的模型数据 (替代原来的 MODELS_DATA[activeTab])
+  const activeModel = data.tabs.find((t) => t.id === activeTab) || data.tabs[0];
+
+  // 辅助函数：渲染对应模型的动态可视化图形 (完全保留原视觉逻辑)
   const renderVisualization = (tab: ModelTab) => {
     switch (tab) {
       case "profit":
@@ -39,34 +50,38 @@ export function ModelsDashboard() {
             <div className="w-10 h-10 bg-green-500/20 border border-green-500 rounded backdrop-blur-sm shadow-[0_0_15px_rgba(34,197,94,0.3)]"></div>
           </div>
         );
+      default:
+        return null;
     }
   };
 
   return (
     <section className="py-24 relative overflow-hidden bg-[#010409]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* --- Header --- */}
         <div className="mb-16 text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
             <div className="mb-3">
               <span className="inline-block text-gradient-custom">
-                不止是工具，而是覆盖全链路的
+                {data.header.title_prefix}
               </span>
             </div>
-            <span className="block text-white">“量化决策模型”</span>
+            <span className="block text-white">{data.header.title_highlight}</span>
           </h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+          
           {/* --- Left Navigation (Vertical Pills) --- */}
           <div className="lg:col-span-4 flex flex-col gap-3">
-            {(Object.keys(MODELS_DATA) as ModelTab[]).map((modelKey) => {
-              const model = MODELS_DATA[modelKey];
-              const isActive = activeTab === modelKey;
+            {data.tabs.map((model) => {
+              const isActive = activeTab === model.id;
 
               return (
                 <button
-                  key={modelKey}
-                  onClick={() => setActiveTab(modelKey)}
+                  key={model.id}
+                  onClick={() => setActiveTab(model.id)}
                   className={`group text-left px-6 py-5 rounded-2xl transition-all duration-300 border relative overflow-hidden outline-none cursor-pointer ${
                     isActive
                       ? "border-blue-500 bg-blue-600/10"
@@ -88,7 +103,7 @@ export function ModelsDashboard() {
                           : "text-slate-400 group-hover:text-slate-200"
                       }`}
                     >
-                      {model.shortTitle}
+                      {model.short_title}
                     </span>
                     <span
                       className={`transform transition-transform duration-300 ${
@@ -131,13 +146,13 @@ export function ModelsDashboard() {
               >
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-4">
-                    {activeModel.coreFeature}
+                    {activeModel.core_feature}
                   </div>
                   <h3 className="text-3xl font-bold text-white mb-2">
-                    {activeModel.fullTitle}
+                    {activeModel.full_title}
                   </h3>
                   <p className="text-red-400/90 font-medium italic border-l-2 border-red-500/50 pl-3">
-                    {activeModel.painPoint}
+                    {activeModel.pain_point}
                   </p>
                 </div>
 

@@ -1,5 +1,5 @@
 // src/components/report/AiSimulation.tsx
-import type { SimulationApiResponse } from "@/types/analysis";
+import type { SimulationApiResponse } from "@/types/report";
 
 interface AiSimulationProps {
   data: SimulationApiResponse | null;
@@ -9,7 +9,8 @@ export function AiSimulation({ data }: AiSimulationProps) {
   if (!data) return <div className="py-20 text-center text-slate-600">Loading Simulation...</div>;
 
   return (
-    <section className="relative block w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+    // [Fix] Removed 'block' class to resolve conflict with 'flex'
+    <section className="relative w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
       
       <div className="flex flex-col h-full justify-center space-y-6 md:space-y-10 max-w-6xl mx-auto w-full">
         

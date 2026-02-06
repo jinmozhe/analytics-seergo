@@ -1,24 +1,32 @@
 // src/components/report/DecisionConsole.tsx
 import { useState } from "react";
-import type { DecisionApiResponse } from "@/types/analysis";
+import type { DecisionApiResponse } from "@/types/report";
 
 interface DecisionConsoleProps {
   data: DecisionApiResponse | null;
 }
 
 export function DecisionConsole({ data }: DecisionConsoleProps) {
-  if (!data) return <div className="py-20 text-center text-slate-600">Loading Decision Console...</div>;
+  // [修复 1] Hooks 必须在条件返回之前无条件调用
+  // 使用可选链 (?.) 防止 data 为 null 时报错，提供空字符串作为 fallback
+  // 注意：在 Loader 模式下，如果 data 为 null，组件会直接进入下方的 return，这些 state 值不会被用到
+  const [activeGoal, setActiveGoal] = useState<string>(data?.strategies?.[0]?.id || "");
+  
+  // 预算选项默认选第 2 个 (index 1)，需做越界保护
+  const [activeBudget, setActiveBudget] = useState<string>(data?.controls?.budget?.options?.[1]?.id || "");
+  
+  // 扩量选项默认选第 3 个 (index 2)，需做越界保护
+  const [activePath, setActivePath] = useState<string>(data?.controls?.expand?.options?.[2]?.id || "");
 
-  // 默认选中第一个
-  const [activeGoal, setActiveGoal] = useState<string>(data.strategies[0].id);
-  const [activeBudget, setActiveBudget] = useState<string>(data.controls.budget.options[1].id);
-  const [activePath, setActivePath] = useState<string>(data.controls.expand.options[2].id);
+  // 空状态保护 (此时 Hooks 已经初始化完毕)
+  if (!data) return <div className="py-20 text-center text-slate-600">Loading Decision Console...</div>;
 
   // 动态查找当前选中的策略数据
   const currentStrategy = data.strategies.find(s => s.id === activeGoal) || data.strategies[0];
 
   return (
-    <section className="relative block w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+    // [修复 2] 移除了 'block'，保留 'flex' 以支持 flex-col 布局
+    <section className="relative w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
       
       <div className="flex flex-col h-full justify-center space-y-6 md:space-y-10 max-w-6xl mx-auto w-full">
         

@@ -1,62 +1,205 @@
+// src/types/home.ts
 import { z } from "zod";
 
-// --- Core Enums & Unions ---
+// =========================================
+// 0. Runtime Configuration (Home Context)
+// =========================================
+// [新增] 仅定义 Home 页面需要的配置字段，实现与 DeepDive 解耦
+export const HomeConfigSchema = z.object({
+    api_base_url: z.string(),
+    user_id: z.string(),
+    marketplace_id: z.string(),
+});
+export type HomeConfig = z.infer<typeof HomeConfigSchema>;
 
-// 模型 Tab 类型 (联合类型)
-export const ModelTabSchema = z.enum([
-    "profit",
-    "traffic",
-    "capital",
-    "competition",
-]);
+// =========================================
+// 1. Hero Section (API: REPORT_HERO)
+// =========================================
+export const HomeHeroSchema = z.object({
+    tech_stack: z.array(z.object({
+        name: z.string(),
+        theme: z.enum(["blue", "indigo", "purple", "orange", "emerald", "cyan"]),
+    })),
+    headline: z.object({
+        prefix: z.string(),
+        highlight_1: z.string(),
+        connector: z.string(),
+        highlight_2: z.string(),
+    }),
+    subheadline: z.string(),
+    cta_buttons: z.object({
+        primary: z.string(),
+        secondary: z.string(),
+    }),
+    social_proof: z.object({
+        count: z.string(),
+        text_prefix: z.string(),
+        text_highlight: z.string(),
+        text_suffix: z.string(),
+    }),
+});
+export type HomeHeroData = z.infer<typeof HomeHeroSchema>;
+
+// =========================================
+// 2. Results Section (API: KPI_METRICS)
+// =========================================
+export const HomeResultsSchema = z.object({
+    header: z.object({
+        title_main: z.string(),
+        title_highlight: z.string(),
+        description: z.string(),
+    }),
+    cards: z.object({
+        loss_list: z.object({
+            title: z.string(),
+            subtitle: z.string(),
+            description: z.string(),
+            items: z.array(z.object({
+                label: z.string(),
+                tag: z.string(),
+                tag_color: z.enum(["red", "orange", "emerald", "blue"]),
+            })),
+            stats: z.object({
+                label_1: z.string(),
+                value_1: z.string(),
+                label_2: z.string(),
+                value_2: z.string(),
+            }),
+        }),
+        opportunity_list: z.object({
+            title: z.string(),
+            subtitle: z.string(),
+            description: z.string(),
+            items: z.array(z.object({
+                label: z.string(),
+                tag: z.string(),
+                tag_color: z.enum(["red", "orange", "emerald", "blue"]),
+            })),
+            stats: z.object({
+                label_1: z.string(),
+                value_1: z.string(),
+                label_2: z.string(),
+                value_2: z.string(),
+            }),
+        }),
+        execution_log: z.object({
+            title: z.string(),
+            subtitle: z.string(),
+            description: z.string(),
+            stats: z.object({
+                label_1: z.string(),
+                value_1: z.string(),
+                label_2: z.string(),
+                value_2: z.string(),
+            }),
+        }),
+    }),
+    execution_logs_data: z.array(z.object({
+        time: z.string(),
+        title: z.string(),
+        action: z.string(),
+        reason: z.string(),
+        expectation: z.string(),
+        type: z.enum(["success", "warning", "danger"]),
+    })),
+});
+export type HomeResultsData = z.infer<typeof HomeResultsSchema>;
+
+// =========================================
+// 3. Models Section (API: DECISION_CENTER)
+// =========================================
+export const ModelTabSchema = z.enum(["profit", "traffic", "capital", "competition"]);
 export type ModelTab = z.infer<typeof ModelTabSchema>;
 
-// 日志类型 (用于状态颜色映射)
-export const LogTypeSchema = z.enum(["success", "warning", "danger"]);
-export type LogType = z.infer<typeof LogTypeSchema>;
-
-// --- Data Entities ---
-
-// 1. 技术栈项目 (Hero Section)
-export const TechItemSchema = z.object({
-    name: z.string(),
-    color: z.string(),     // Tailwind text color class
-    border: z.string(),    // Tailwind border hover class
-    iconColor: z.string(), // Tailwind bg color class
+export const HomeModelsSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+    }),
+    tabs: z.array(z.object({
+        id: ModelTabSchema,
+        short_title: z.string(),
+        subtitle: z.string(),
+        full_title: z.string(),
+        pain_point: z.string(),
+        core_feature: z.string(),
+        details: z.array(z.string()),
+    })),
 });
-export type TechItem = z.infer<typeof TechItemSchema>;
+export type HomeModelsData = z.infer<typeof HomeModelsSchema>;
 
-// 2. 自动化日志 (Results Section - Execution)
-export const ExecutionLogSchema = z.object({
-    time: z.string(),
-    title: z.string(),
-    action: z.string(),
-    reason: z.string(),
-    expectation: z.string(),
-    type: LogTypeSchema,
+// =========================================
+// 4. Process Section (API: AI_REVENUE_SIMULATION)
+// =========================================
+export const HomeProcessSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+        description: z.string(),
+    }),
+    stages: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        subtitle: z.string(),
+        icon_key: z.string(),
+        desc_top: z.string(),
+        desc_bottom: z.string(),
+    })),
 });
-export type ExecutionLog = z.infer<typeof ExecutionLogSchema>;
+export type HomeProcessData = z.infer<typeof HomeProcessSchema>;
 
-// 3. 对比表格行 (Comparison Section)
-export const ComparisonRowSchema = z.object({
-    dim: z.string(),      // 维度
-    iconPath: z.string(), // SVG Path d attribute
-    rule: z.string(),     // 传统规则描述
-    human: z.string(),    // 人工描述
-    seergo: z.string(),   // AI 优势描述
-    highlight: z.boolean().default(false),
+// =========================================
+// 5. Comparison Section (API: COVERAGE_PRECISION)
+// =========================================
+export const HomeComparisonSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_connector: z.string(),
+        title_suffix: z.string(),
+    }),
+    table_rows: z.array(z.object({
+        dim: z.string(),
+        icon_path: z.string(),
+        rule: z.string(),
+        seergo: z.string(),
+    })),
+    feature_cards: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        subtitle: z.string(),
+        description: z.string(),
+        theme: z.enum(["purple", "blue"]),
+    })),
 });
-export type ComparisonRow = z.infer<typeof ComparisonRowSchema>;
+export type HomeComparisonData = z.infer<typeof HomeComparisonSchema>;
 
-// 4. 模型详情内容 (Models Section)
-// 将原 Angular switch-case 逻辑重构为静态配置结构
-export const ModelContentSchema = z.object({
-    id: ModelTabSchema,
-    shortTitle: z.string(), // 左侧导航短标题
-    subtitle: z.string(),   // 左侧导航英文副标题
-    fullTitle: z.string(),  // 右侧面板主标题
-    painPoint: z.string(),  // 痛点文案
-    coreFeature: z.string(),// 核心功能标签
-    details: z.array(z.string()), // 详细说明列表
+// =========================================
+// 6. Final CTA Section (API: FINAL_CTA) [新增]
+// =========================================
+export const HomeFinalCTASchema = z.object({
+    title_main: z.string(),
+    title_highlight: z.string(),
+    description: z.string(),
+    buttons: z.object({
+        primary: z.string(),
+        secondary: z.string(),
+    }),
+    trust_badges: z.array(z.object({
+        id: z.string(), // 用于前端判断渲染具体图标 (如 'aws', 'security', 'verified')
+        line_1: z.string(),
+        line_2: z.string(),
+    })),
 });
-export type ModelContent = z.infer<typeof ModelContentSchema>;
+export type HomeFinalCTAData = z.infer<typeof HomeFinalCTASchema>;
+
+// =========================================
+// Aggregated Dashboard Data
+// =========================================
+export type HomeDashboardData = {
+    heroData: HomeHeroData | null;
+    resultsData: HomeResultsData | null;
+    modelsData: HomeModelsData | null;
+    processData: HomeProcessData | null;
+    comparisonData: HomeComparisonData | null;
+    finalCTAData: HomeFinalCTAData | null; // [新增]
+};

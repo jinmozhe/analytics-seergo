@@ -6,7 +6,7 @@ import { AnalystInsight } from "@/components/report/AnalystInsight";
 import { CoveragePrecision } from "@/components/report/CoveragePrecision";
 import { AiSimulation } from "@/components/report/AiSimulation";
 import { DecisionConsole } from "@/components/report/DecisionConsole";
-import type { AnalysisDashboardData } from "@/types/analysis";
+import type { AnalysisDashboardData } from "@/types/report";
 
 export default function Report() {
   // 1. 获取 Loader 返回的完整数据

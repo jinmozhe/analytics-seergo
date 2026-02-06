@@ -1,5 +1,5 @@
 // src/components/report/KpiOverview.tsx
-import type { KpiApiResponse } from "@/types/analysis";
+import type { KpiApiResponse } from "@/types/report";
 
 interface KpiOverviewProps {
   data: KpiApiResponse | null;
@@ -9,9 +9,10 @@ export function KpiOverview({ data }: KpiOverviewProps) {
   if (!data) return <div className="py-20 text-center text-slate-600">Loading KPI Data...</div>;
 
   return (
-    <section className="relative block w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
+    // [修复] 移除了 'block' 类，保留 'flex' 以配合 flex-col 和 justify-center 工作
+    <section className="relative w-full py-12 md:py-20 px-4 md:px-8 max-w-[1400px] mx-auto min-h-screen flex flex-col justify-center overflow-hidden">
       
-      {/* Background (省略部分重复代码，保留结构) */}
+      {/* Background */}
       <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
           {/* ... Spheres ... */}
       </div>
@@ -34,12 +35,12 @@ export function KpiOverview({ data }: KpiOverviewProps) {
               <div>
                 <div className="flex justify-between items-start mb-6">
                   <h3 className="text-base md:text-lg font-medium text-slate-200">{card.title}</h3>
+                  {/* 注意：Tailwind 通常不支持动态拼接类名 (bg-${color})，如果样式丢失，请在 index.css 中使用 safelist 或改用 style 属性 */}
                   <span className={`px-2 py-1 rounded bg-${card.status_color}-500/10 text-${card.status_color}-400 text-[10px] font-bold border border-${card.status_color}-500/20`}>
                     {card.status_label}
                   </span>
                 </div>
                 
-                {/* 针对不同 Card 的布局微调 (根据 ID 或属性) */}
                 {card.id === 'sales-gap' ? (
                     <div className="flex justify-between items-end mb-8">
                         <div>
@@ -57,14 +58,12 @@ export function KpiOverview({ data }: KpiOverviewProps) {
                             <span className="text-3xl md:text-4xl font-bold text-orange-400">{card.current_value}</span>
                             <span className="text-xs md:text-sm font-bold text-slate-400 mb-1">{card.current_label}</span>
                         </div>
-                        {/* 简化 Bar Chart 视觉 (使用 progress_percent) */}
                         <div className="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
                              <div className={`h-full bg-${card.status_color}-500`} style={{ width: `${card.progress_percent}%` }}></div>
                         </div>
                      </div>
                 )}
 
-                {/* Shared Progress Bar for Sales, simple for ROI in this generic view */}
                 {card.id === 'sales-gap' && (
                     <div className="relative h-3 md:h-4 bg-slate-800 rounded-full overflow-hidden mb-6">
                         <div className="absolute h-full bg-slate-600 w-full opacity-30"></div>

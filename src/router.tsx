@@ -5,7 +5,8 @@ import Home from "@/pages/Home";
 import Report from "@/pages/Report";
 import DeepDive from "@/pages/DeepDive";
 import { fetchDeepDiveConfig, fetchReportList } from "@/services/deep-dive";
-import { analysisService } from "@/services/analysisService";
+import { reportService } from "@/services/reportService";
+import { homeService } from "@/services/homeService";
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +16,16 @@ export const router = createBrowserRouter([
       {
         index: true, // 使用 index 路由替代 path: "/"
         element: <Home />,
+        // [新增] Home 页面并行数据加载器
+        loader: async () => {
+             try {
+                 const homeData = await homeService.fetchHomePageData();
+                 return homeData;
+             } catch (error) {
+                 console.error("[Router] Home Loader Failed:", error);
+                 throw error;
+             }
+        }
       },
       {
         path: "report",
@@ -23,7 +34,7 @@ export const router = createBrowserRouter([
         loader: async () => {
             try {
                 // 一次性获取所有维度的数据 (Hero, KPI, Insight, Coverage, Simulation, Decision)
-                const dashboardData = await analysisService.fetchReportPageData();
+                const dashboardData = await reportService.fetchReportPageData();
                 return dashboardData;
             } catch (error) {
                 console.error("[Router] Report Loader Failed:", error);

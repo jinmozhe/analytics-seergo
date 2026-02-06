@@ -1,118 +1,222 @@
+// src/types/report.ts
 import { z } from "zod";
 
 // =========================================
-// 1. Enums & Unions (State Values)
+// 1. Report Hero (API Response)
 // =========================================
-
-// 战略目标 (Decision Console)
-export const StrategyGoalSchema = z.enum(["roi", "sales", "balance"]);
-export type StrategyGoal = z.infer<typeof StrategyGoalSchema>;
-
-// 预算调整模式 (Decision Console)
-export const BudgetModeSchema = z.enum(["inc", "hold", "dec"]);
-export type BudgetMode = z.infer<typeof BudgetModeSchema>;
-
-// 扩量/优化方向 (Decision Console)
-export const ExpandPathSchema = z.enum(["asin", "kw", "structure"]);
-export type ExpandPath = z.infer<typeof ExpandPathSchema>;
-
-// 报告类型 (Hero Dropdown)
-export const ReportTypeSchema = z.enum(["sp", "sb", "sd"]);
-export type ReportType = z.infer<typeof ReportTypeSchema>;
-
-// =========================================
-// 2. Data Structures (Content Models)
-// =========================================
-
-// --- Decision Console Models ---
-
-export const StrategyOptionSchema = z.object({
-    id: StrategyGoalSchema,
-    label: z.string(),
-    modeLabel: z.string(), // e.g. "安全模式"
-    desc: z.string(),
-    isRecommended: z.boolean().optional(),
-});
-export type StrategyOption = z.infer<typeof StrategyOptionSchema>;
-
-export const ControlOptionSchema = z.object({
-    id: z.string(),
-    label: z.string(),
-});
-export type ControlOption = z.infer<typeof ControlOptionSchema>;
-
-// --- Hero Models ---
-
-export const ReportFilterSchema = z.object({
-    id: ReportTypeSchema,
-    label: z.string(),
-    selected: z.boolean(),
-});
-export type ReportFilter = z.infer<typeof ReportFilterSchema>;
-
-// --- KpiOverview Models ---
-
-export const MetricItemSchema = z.object({
-    label: z.string(),
-    value: z.string(),
-    trend: z.string().optional(), // e.g. "+12.5%"
-    trendUp: z.boolean().optional(), // true = green/good, false = red/bad
-    subValue: z.string().optional(), // e.g. "Sold" annotation
-});
-export type MetricItem = z.infer<typeof MetricItemSchema>;
-
-// 差距分析卡片 (Gap Analysis)
-export const GapCardDataSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    status: z.string(), // e.g. "差距扩大", "未达标"
-    statusColor: z.enum(["red", "orange"]), // Map to Tailwind colors
-
-    // Primary Metric
-    currentValue: z.string(),
-    currentLabel: z.string(),
-    targetValue: z.string(),
-    targetLabel: z.string(),
-
-    // Progress Bar
-    progress: z.number(), // 0-100
-
-    // Alert Footer
-    alertMessage: z.string(), // HTML string allowed for highlights
-    alertTrend: z.string().optional(),
-});
-export type GapCardData = z.infer<typeof GapCardDataSchema>;
-
-// --- AiSimulation Models ---
-
-export const SimulationDataSchema = z.object({
-    currentRoi: z.string(),
-    currentGap: z.string(),
-    currentSales: z.string(),
-    currentSpend: z.string(),
-
-    predictedRoi: z.string(),
-    predictedGrowth: z.string(),
-    optimizedSpend: z.string(),
-    optimizedSpendChange: z.string(),
-    predictedSales: z.string(),
-    predictedSalesChange: z.string(),
-
-    confidence: z.string(),
-});
-export type SimulationData = z.infer<typeof SimulationDataSchema>;
-
-// --- AnalystInsight Models ---
-
-export const InsightDataSchema = z.object({
-    roi: z.string(),
-    summary: z.string(),
-    analystName: z.string(),
-    strategies: z.array(z.object({
+export const HeroApiResponseSchema = z.object({
+    eyebrow_text: z.string(),
+    main_title_line_1: z.string(),
+    main_title_line_2: z.string(),
+    subtitle_prefix: z.string(),
+    subtitle_suffix: z.string(),
+    description: z.string(),
+    action_cards: z.array(z.object({
+        id: z.string(),
+        type: z.string(),
         title: z.string(),
-        tag: z.string(),
-        desc: z.string(),
-        priority: z.enum(["high", "immediate"]),
+        subtitle: z.string(),
+        link_target: z.string(),
+        theme_color: z.string(),
+    })),
+    footer_validation_text: z.string(),
+});
+export type HeroApiResponse = z.infer<typeof HeroApiResponseSchema>;
+
+// =========================================
+// 2. KPI Metrics (API Response)
+// =========================================
+export const KpiApiResponseSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+        subtitle: z.string(),
+    }),
+    gap_cards: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        status_label: z.string(),
+        status_color: z.enum(["red", "orange"]),
+        current_value: z.string(),
+        current_label: z.string(),
+        target_value: z.string(),
+        target_label: z.string(),
+        progress_percent: z.number(),
+        alert_html: z.string(),
+    })),
+    metric_sections: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        theme_color: z.string(),
+        items: z.array(z.object({
+            label: z.string(),
+            value: z.string(),
+            highlight: z.boolean(),
+        })),
     })),
 });
-export type InsightData = z.infer<typeof InsightDataSchema>;
+export type KpiApiResponse = z.infer<typeof KpiApiResponseSchema>;
+
+// =========================================
+// 3. Analyst Insights (API Response)
+// =========================================
+export const InsightApiResponseSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+        subtitle: z.string(),
+    }),
+    summary_card: z.object({
+        title: z.string(),
+        roi_display: z.string(),
+        content_html: z.string(),
+        analyst_info: z.object({
+            name: z.string(),
+            status_html: z.string(),
+        }),
+    }),
+    strategy_card: z.object({
+        main_title: z.string(),
+        strategy_name: z.string(),
+        strategy_en: z.string(),
+        list_title: z.string(),
+        list_items: z.array(z.object({
+            title: z.string(),
+            tag: z.string(),
+            desc: z.string(),
+        })),
+    }),
+});
+export type InsightApiResponse = z.infer<typeof InsightApiResponseSchema>;
+
+// =========================================
+// 4. Coverage & Precision (API Response)
+// =========================================
+export const CoverageApiResponseSchema = z.object({
+    header: z.object({
+        title_highlight: z.string(),
+        title_suffix: z.string(),
+        subtitle: z.string(),
+    }),
+    coverage_section: z.object({
+        step_label: z.string(),
+        main_title: z.string(),
+        chart_percent: z.number(),
+        metrics: z.array(z.object({
+            label: z.string(),
+            value: z.string(),
+            sub_label: z.string().optional(),
+        })),
+        alert_box: z.object({
+            title: z.string(),
+            message_html: z.string(),
+        }),
+    }),
+    precision_section: z.object({
+        step_label: z.string(),
+        main_title: z.string(),
+        bars: z.array(z.object({
+            label: z.string(),
+            sub: z.string(),
+            value: z.number(),
+            color_class: z.string(),
+        })),
+        footer_note: z.string(),
+    }),
+});
+export type CoverageApiResponse = z.infer<typeof CoverageApiResponseSchema>;
+
+// =========================================
+// 5. AI Revenue Simulation (API Response)
+// =========================================
+export const SimulationApiResponseSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+        subtitle: z.string(),
+        description: z.string(),
+        confidence_html: z.string(),
+    }),
+    current_diagnosis_card: z.object({
+        title: z.string(),
+        tag_label: z.string(),
+        metrics: z.object({
+            roi_label: z.string(),
+            roi_value: z.string(),
+            roi_gap_label: z.string(),
+            sales_label: z.string(),
+            sales_value: z.string(),
+            spend_label: z.string(),
+            spend_value: z.string(),
+        }),
+        analysis_html: z.string(),
+    }),
+    simulation_card: z.object({
+        title: z.string(),
+        subtitle: z.string(),
+        status_label: z.string(),
+        strategy_tag: z.string(),
+        metrics: z.object({
+            roi_label: z.string(),
+            roi_value: z.string(),
+            growth_value: z.string(),
+            growth_label: z.string(),
+            spend_label: z.string(),
+            spend_value: z.string(),
+            spend_change: z.string(),
+            sales_label: z.string(),
+            sales_value: z.string(),
+            sales_change: z.string(),
+        }),
+        conclusion_html: z.string(),
+    }),
+    footer_note: z.string(),
+});
+export type SimulationApiResponse = z.infer<typeof SimulationApiResponseSchema>;
+
+// =========================================
+// 6. Decision Center (API Response)
+// =========================================
+export const DecisionApiResponseSchema = z.object({
+    header: z.object({
+        title_prefix: z.string(),
+        title_highlight: z.string(),
+        subtitle: z.string(),
+        description: z.string(),
+    }),
+    strategies: z.array(z.object({
+        id: z.string(),
+        label: z.string(),
+        icon_key: z.string(),
+        desc: z.string(),
+        is_recommended: z.boolean(),
+        system_promise: z.object({
+            title_html: z.string(),
+            subtitle_html: z.string(),
+        }),
+    })),
+    controls: z.object({
+        budget: z.object({
+            title: z.string(),
+            options: z.array(z.object({ id: z.string(), label: z.string() })),
+        }),
+        expand: z.object({
+            title: z.string(),
+            options: z.array(z.object({ id: z.string(), label: z.string() })),
+        }),
+    }),
+    action_button_text: z.string(),
+});
+export type DecisionApiResponse = z.infer<typeof DecisionApiResponseSchema>;
+
+// =========================================
+// 7. Aggregated Dashboard Type
+// =========================================
+export type AnalysisDashboardData = {
+    heroData: HeroApiResponse | null;
+    kpiData: KpiApiResponse | null;
+    insightData: InsightApiResponse | null;
+    coverageData: CoverageApiResponse | null;
+    simulationData: SimulationApiResponse | null;
+    decisionData: DecisionApiResponse | null;
+};

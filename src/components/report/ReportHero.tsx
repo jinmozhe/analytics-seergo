@@ -1,6 +1,6 @@
 // src/components/report/ReportHero.tsx
 import { Link } from "react-router-dom";
-import type { HeroApiResponse } from "@/types/analysis";
+import type { HeroApiResponse } from "@/types/report";
 
 interface ReportHeroProps {
   data: HeroApiResponse | null;
