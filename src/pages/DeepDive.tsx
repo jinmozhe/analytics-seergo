@@ -1,23 +1,22 @@
 // src/pages/DeepDive.tsx
 import { useMemo } from "react";
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData } from "react-router-dom"; // 注意: RRv7 兼容层，若纯 v7 项目可能是 'react-router'
 import { Navbar } from "@/components/home/Navbar";
 import { DeepDiveConfig } from "@/components/deep-dive/DeepDiveConfig";
 import { DeepDiveChat } from "@/components/deep-dive/DeepDiveChat";
 import { useDeepDive } from "@/hooks/use-deep-dive";
+import { useDeepDiveChat } from "@/hooks/use-deep-dive-chat";
 import type { 
   ReportAPIItem, 
   DeepDiveConfig as ConfigType,
-  DeepDiveState 
+  DeepDiveState,
+  ReportType
 } from "@/types/deep-dive";
-import type { ReportType } from "@/types/deep-dive"; // 需要确保 DeepDiveChat 接受的类型兼容
 
 export default function DeepDive() {
   // =========================================
   // 1. 获取路由层预加载的数据 (Loader Data)
   // =========================================
-  // 这里的 config 和 rawReports 已经在 router.tsx 中通过 await 加载完毕
-  // 进入组件时数据绝对可用，无需 loading 状态
   const { rawReports, config } = useLoaderData() as { 
     rawReports: ReportAPIItem[]; 
     config: ConfigType;
@@ -26,14 +25,28 @@ export default function DeepDive() {
   // =========================================
   // 2. 初始化业务逻辑 (Business Logic)
   // =========================================
-  // 将原始数据交给 Hook，获取清洗后的选项和级联状态
+  
+  // A. 报告筛选逻辑 (Left Panel Logic)
   const { state, actions, options, currentReport } = useDeepDive(rawReports);
+
+  // B. AI 对话逻辑 (Right Panel Logic)
+  // 核心集成点：将当前选中的 Report ID 传递给 Chat Hook
+  // 当 detailId 改变导致 currentReport 变化时，Chat Hook 会自动重置并加载新的历史记录
+  const activeReportId = currentReport?.id || null;
+
+  const { 
+    messages, 
+    isStreaming, 
+    streamingContent, 
+    sendMessage,
+    isLoadingHistory 
+  } = useDeepDiveChat(config, activeReportId);
 
   // =========================================
   // 3. 辅助逻辑 (Helpers)
   // =========================================
 
-  // 处理配置变更回调
+  // 处理左侧配置变更
   const handleConfigChange = (field: keyof DeepDiveState, value: string) => {
     switch (field) {
       case 'timeId':
@@ -50,38 +63,27 @@ export default function DeepDive() {
 
   // 计算 PDF 下载链接
   const downloadUrl = useMemo(() => {
-    if (!currentReport?.pdf_path) return null;
+     if (!currentReport?.pdf_path) return null;
+     
+     // 后端返回: "/reports/2026.pdf"
+     // 前端页面: "https://analytics.seergo.cn/deep-dive"
+     // 结果: 浏览器自动解析为 "https://analytics.seergo.cn/reports/2026.pdf"
+     
+     // 只需要确保它以 / 开头即可
+     return currentReport.pdf_path.startsWith("/") 
+        ? currentReport.pdf_path 
+        : `/${currentReport.pdf_path}`;
+        
+  }, [currentReport]);
 
-    // 简单处理: 假设静态文件在 API Host 的根目录下
-    // 如果 config.api_base_url 是 "http://.../api/v1"，我们需要去掉尾部
-    // 生产环境建议由后端直接返回完整 URL
-    let baseUrl = config.api_base_url;
-    
-    // 如果 base_url 包含 /api/v1，尝试剥离它以指向根目录 (根据实际服务器配置调整)
-    // 例如: http://127.0.0.1:8000/api/v1 -> http://127.0.0.1:8000
-    if (baseUrl.endsWith("/api/v1")) {
-      baseUrl = baseUrl.substring(0, baseUrl.length - 7);
-    }
-    // 移除末尾斜杠
-    baseUrl = baseUrl.replace(/\/$/, "");
-    
-    // 确保 path 开头没有斜杠
-    const path = currentReport.pdf_path.startsWith("/") 
-      ? currentReport.pdf_path.slice(1) 
-      : currentReport.pdf_path;
-
-    return `${baseUrl}/${path}`;
-  }, [currentReport, config.api_base_url]);
-
-  // 推导 Chat 组件需要的上下文类型 (Simple Mapping)
-  // 假设 report_source 格式为 "SB_VIDEO", "SP_ASIN" 等
-  // 我们提取前缀作为 Broad Type ("sb", "sp", "sd")
+  // 推导 Chat 组件需要的 Broad Type (用于显示模型类型：SP/SB/SD)
   const activeBroadType = useMemo(() => {
-    if (!state.detailId) return 'sp'; // 默认值
+    if (!state.detailId) return 'sp'; // 默认
     
+    // 假设 ID 格式为 "SB_VIDEO" -> 取 "sb"
     const prefix = state.detailId.split('_')[0].toLowerCase();
     if (['sp', 'sb', 'sd'].includes(prefix)) {
-      return prefix as ReportType; // 强转为 DeepDiveChat 需要的类型
+      return prefix as ReportType;
     }
     return 'sp'; // 兜底
   }, [state.detailId]);
@@ -114,7 +116,7 @@ export default function DeepDive() {
         {/* Content Grid Layout */}
         <div className="flex flex-col xl:flex-row gap-8 h-full min-h-[600px]">
            
-           {/* LEFT COLUMN: Configuration Panel (UI + Logic) */}
+           {/* LEFT COLUMN: Configuration Panel */}
            <div className="w-full xl:w-[600px] shrink-0 flex flex-col h-full">
               <DeepDiveConfig 
                 state={state} 
@@ -124,10 +126,17 @@ export default function DeepDive() {
               />
            </div>
 
-           {/* RIGHT COLUMN: AI Chat Terminal */}
+           {/* RIGHT COLUMN: AI Chat Terminal (Real Data Integrated) */}
            <div className="flex-1 h-full min-h-[600px]">
-              {/* 目前 Chat 组件仍使用 Mock 数据，但已接收真实的上下文类型 */}
-              <DeepDiveChat activeType={activeBroadType} />
+              <DeepDiveChat 
+                activeType={activeBroadType} 
+                // --- 真实数据 Props ---
+                messages={messages}
+                isStreaming={isStreaming}
+                streamingContent={streamingContent}
+                onSendMessage={sendMessage}
+                isLoadingHistory={isLoadingHistory}
+              />
            </div>
 
         </div>

@@ -1,9 +1,13 @@
 // src/services/deep-dive.ts
 import axios from "axios";
+import { z } from "zod";
 import {
     DeepDiveConfigSchema,
+    QAMessageSchema,
+    InitQAResponseSchema,
     type DeepDiveConfig,
-    type ReportAPIResponse
+    type ReportAPIResponse,
+    type QAMessage
 } from "@/types/deep-dive";
 
 /**
@@ -60,4 +64,72 @@ export async function fetchReportList(config: DeepDiveConfig): Promise<ReportAPI
     }
 
     return data;
+}
+
+/**
+ * 3. 获取对话历史 (Get Chat History)
+ */
+export async function fetchQAHistory(
+    config: DeepDiveConfig,
+    reportId: string
+): Promise<QAMessage[]> {
+    const { data } = await axios.post(
+        "/marketing/qa/history",
+        {
+            user_id: config.user_id,
+            marketplace_id: config.marketplace_id,
+            report_id: reportId
+        },
+        {
+            baseURL: config.api_base_url,
+            headers: { "Content-Type": "application/json" }
+        }
+    );
+
+    if (data.code !== "success") {
+        throw new Error(data.message || "Failed to fetch history");
+    }
+
+    // 运行时校验返回数组
+    return z.array(QAMessageSchema).parse(data.data);
+}
+
+/**
+ * 4. 初始化对话 (Init QA Session)
+ * 返回 qa_id 用于建立 SSE 连接
+ */
+export async function initiateQA(
+    config: DeepDiveConfig,
+    reportId: string,
+    question: string
+): Promise<string> {
+    const { data } = await axios.post(
+        "/marketing/qa/ask",
+        {
+            user_id: config.user_id,
+            marketplace_id: config.marketplace_id,
+            report_id: reportId,
+            question
+        },
+        {
+            baseURL: config.api_base_url,
+            headers: { "Content-Type": "application/json" }
+        }
+    );
+
+    if (data.code !== "success") {
+        throw new Error(data.message || "Failed to initiate QA");
+    }
+
+    const { qa_id } = InitQAResponseSchema.parse(data.data);
+    return qa_id;
+}
+
+/**
+ * 5. 获取 SSE 流地址 (Helper)
+ */
+export function getQAStreamUrl(config: DeepDiveConfig, qaId: string): string {
+    // 移除 baseURL 末尾的斜杠，避免双斜杠
+    const baseUrl = config.api_base_url.replace(/\/$/, "");
+    return `${baseUrl}/marketing/qa/stream/${qaId}`;
 }

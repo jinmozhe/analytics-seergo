@@ -5,6 +5,7 @@ import Home from "@/pages/Home";
 import Report from "@/pages/Report";
 import DeepDive from "@/pages/DeepDive";
 import { fetchDeepDiveConfig, fetchReportList } from "@/services/deep-dive";
+import { analysisService } from "@/services/analysisService";
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,17 @@ export const router = createBrowserRouter([
       {
         path: "report",
         element: <Report />,
+        // [新增] Report 页面的并行数据加载器
+        loader: async () => {
+            try {
+                // 一次性获取所有维度的数据 (Hero, KPI, Insight, Coverage, Simulation, Decision)
+                const dashboardData = await analysisService.fetchReportPageData();
+                return dashboardData;
+            } catch (error) {
+                console.error("[Router] Report Loader Failed:", error);
+                throw error; // Let ErrorBoundary handle it
+            }
+        }
       },
     ],
   },
