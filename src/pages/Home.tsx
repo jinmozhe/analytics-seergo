@@ -8,6 +8,8 @@ import { ComparisonSection } from "@/components/home/ComparisonSection";
 // 1. 引入新组件
 import { FinalCTASection } from "@/components/home/FinalCTASection"; 
 import type { HomeDashboardData } from "@/types/home";
+// [关键变更] 引入首页专属样式，隔离 index.css 污染
+import "./Home.css";
 
 export default function Home() {
   const {

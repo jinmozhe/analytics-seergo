@@ -1,0 +1,99 @@
+/* src/pages/Report.css */
+
+/* 1. 外部资源 */
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@100;300;400;500;700;900&display=swap');
+
+/* =================================================================
+   🔥 核心修复：全局根字号锁定 (Global Root Lock)
+   必须写在 #report-page-scope 外面！
+   这会强制浏览器无视 AI Studio 的默认设置，将 1rem 强行锁定为 16px。
+   ================================================================= */
+html {
+  font-size: 14px !important; 
+  -webkit-text-size-adjust: 100%;
+}
+
+/* =========================================
+   2. 作用域配置 (Scope Configuration)
+   ========================================= */
+#report-page-scope {
+  /* --- A. 局部变量 --- */
+  --color-bg: #020617; 
+  --color-brand: #3B82F6; 
+  --color-brand-light: #60A5FA;
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #94A3B8;
+
+  /* --- B. 基础样式 --- */
+  /* 注意：这里不再设置 font-size，因为 rem 不听它的 */
+  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif !important;
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  
+  scroll-behavior: smooth !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ... 以下原有代码保持不变 ... */
+#report-page-scope ::-webkit-scrollbar { width: 4px; }
+#report-page-scope ::-webkit-scrollbar-track { background: transparent; }
+#report-page-scope ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+#report-page-scope ::-webkit-scrollbar-thumb:hover { background: var(--color-brand-light); }
+
+#report-page-scope .glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+#report-page-scope .glass-nav {
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#report-page-scope .hero-gradient-text,
+#report-page-scope .text-gradient-report { 
+  background: linear-gradient(to right, #007AFF 0%, #007AFF 50%, #8A6D9B 75%, #FF6F3C 85%, #FF6F3C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  color: transparent; 
+}
+
+/* [字体大小断点优化] */
+#report-page-scope h1 {
+  font-weight: 700 !important; /* 对齐 Angular Bold */
+  letter-spacing: -0.05em !important;
+  line-height: 1 !important;
+  font-size: 3.75rem !important; /* 移动端保底 */
+}
+
+/* 降低断点至 768px，确保在较窄的预览窗口也能显示大字体 */
+@media (min-width: 768px) {
+  #report-page-scope h1 {
+    font-size: 6rem !important; /* 96px */
+  }
+}
+
+/* [新增] 强制覆盖 drop-shadow-xl 以匹配 Angular 柔和阴影 */
+#report-page-scope .drop-shadow-xl {
+  filter: drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08)) !important;
+}
+
+#report-page-scope .animate-pulse-slow { animation: pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+#report-page-scope .animate-shimmer { animation: shimmer 2s infinite linear; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.05); }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
