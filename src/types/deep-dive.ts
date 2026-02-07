@@ -20,10 +20,11 @@ export type DeepDiveConfig = z.infer<typeof DeepDiveConfigSchema>;
 
 export interface ReportAPIItem {
     id: string;
+    ad_type: string;        // E.g., "SP", "SB", "SBV", "SD", "DSP"
     period_start: string;
     period_end: string;
-    report_type: string;
-    report_source: string;
+    report_type: string;    // E.g., "DIAGNOSTIC", "EFFECT"
+    report_source: string;  // E.g., "ASIN", "KEYWORD"
     pdf_path: string | null;
 }
 
@@ -36,16 +37,14 @@ export interface ReportAPIResponse {
 }
 
 // =========================================
-// 3. Shared Types & Enums (The Missing Parts)
+// 3. Shared Types & Enums
 // =========================================
 
-// 宽泛的报告类型 (用于 Chat 上下文切换)
-export type BroadReportType = 'sp' | 'sb' | 'sd';
+// 用于 Chat 组件上下文判断的报告类型
+// 对应 ad_type 的小写形式，用于加载对应的 AI 模型头像/提示语
+export type ReportType = 'sp' | 'sb' | 'sbv' | 'sd' | 'dsp';
 
-// 兼容别名 (DeepDiveChat.tsx 中使用了 ReportType)
-export type ReportType = BroadReportType;
-
-// 数据预览指标 (用于 Mock 数据展示)
+// 数据预览指标 (用于 Mock 数据展示或未来扩展)
 export interface DataPreviewMetrics {
     totalSpend: string;
     totalSales: string;
@@ -61,6 +60,7 @@ export interface DataPreviewMetrics {
 // 4. Frontend UI Component Types (Strict)
 // =========================================
 
+// Level 1: 周期选项
 export interface TimeOption {
     id: string;
     label: string;
@@ -69,26 +69,32 @@ export interface TimeOption {
     periodEnd?: string;
 }
 
-export interface CategoryOption {
+// Level 2: 广告类型选项
+export interface AdTypeOption {
     id: string;
     label: string;
     icon?: ElementType<{ className?: string;[key: string]: unknown }>;
 }
 
+// Level 3: 报告类型选项 (原 Category)
+export interface ReportTypeOption {
+    id: string;
+    label: string;
+    icon?: ElementType<{ className?: string;[key: string]: unknown }>;
+}
+
+// Level 4: 报告明细选项
 export interface DetailOption {
     id: string;
     label: string;
-    // 这里引用了 BroadReportType，必须确保它在上面已定义
-    broadType?: BroadReportType;
 }
 
-// 兼容别名
-export type ReportDetailOption = DetailOption;
-
+// 核心状态管理：4 层级联
 export interface DeepDiveState {
-    timeId: string;
-    categoryId: string;
-    detailId: string;
+    timeId: string;       // 选中周期
+    adTypeId: string;     // 选中广告类型 (SP/SB/SD...)
+    reportTypeId: string; // 选中报告类型 (诊断/效果)
+    detailId: string;     // 选中明细 (ASIN/关键词)
 }
 
 // =========================================
@@ -106,13 +112,13 @@ export const QAMessageSchema = z.object({
 
 export type QAMessage = z.infer<typeof QAMessageSchema>;
 
-// 前端使用的聊天消息状态 (扩展自 API 类型以支持 UI 状态)
+// 前端 UI 使用的聊天消息状态
 export interface ChatMessage {
     id: string;
     role: 'user' | 'model' | 'system';
     text: string;
     timestamp: number;
-    isStreaming?: boolean; // 标记这条消息是否正在生成中
+    isStreaming?: boolean; // 标记是否正在流式生成
 }
 
 // 初始化 QA 响应

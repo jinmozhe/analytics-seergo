@@ -26,12 +26,12 @@ export default function DeepDive() {
   // 2. 初始化业务逻辑 (Business Logic)
   // =========================================
   
-  // A. 报告筛选逻辑 (Left Panel Logic)
+  // A. 报告筛选逻辑 (4层级联: Time -> AdType -> ReportType -> Detail)
   const { state, actions, options, currentReport } = useDeepDive(rawReports);
 
   // B. AI 对话逻辑 (Right Panel Logic)
   // 核心集成点：将当前选中的 Report ID 传递给 Chat Hook
-  // 当 detailId 改变导致 currentReport 变化时，Chat Hook 会自动重置并加载新的历史记录
+  // 当 Report ID 改变时，Chat Hook 会自动重置并加载新的历史记录
   const activeReportId = currentReport?.id || null;
 
   const { 
@@ -46,14 +46,17 @@ export default function DeepDive() {
   // 3. 辅助逻辑 (Helpers)
   // =========================================
 
-  // 处理左侧配置变更
+  // [UPDATED] 处理左侧配置变更 (适配 4 层状态)
   const handleConfigChange = (field: keyof DeepDiveState, value: string) => {
     switch (field) {
       case 'timeId':
         actions.setTimeId(value);
         break;
-      case 'categoryId':
-        actions.setCategoryId(value);
+      case 'adTypeId': // [NEW] 广告类型
+        actions.setAdTypeId(value);
+        break;
+      case 'reportTypeId': // [RENAMED] 报告类型
+        actions.setReportTypeId(value);
         break;
       case 'detailId':
         actions.setDetailId(value);
@@ -66,27 +69,28 @@ export default function DeepDive() {
      if (!currentReport?.pdf_path) return null;
      
      // 后端返回: "/reports/2026.pdf"
-     // 前端页面: "https://analytics.seergo.cn/deep-dive"
-     // 结果: 浏览器自动解析为 "https://analytics.seergo.cn/reports/2026.pdf"
-     
-     // 只需要确保它以 / 开头即可
+     // 兼容处理：确保它以 / 开头
      return currentReport.pdf_path.startsWith("/") 
         ? currentReport.pdf_path 
         : `/${currentReport.pdf_path}`;
         
   }, [currentReport]);
 
-  // 推导 Chat 组件需要的 Broad Type (用于显示模型类型：SP/SB/SD)
-  const activeBroadType = useMemo(() => {
-    if (!state.detailId) return 'sp'; // 默认
+  // [UPDATED] 推导 Chat 组件需要的 Broad Type
+  // 用于显示模型类型 (e.g., "SP Model Active", "DSP Model Active")
+  const activeBroadType = useMemo<ReportType>(() => {
+    if (!state.adTypeId) return 'sp'; // 默认兜底
     
-    // 假设 ID 格式为 "SB_VIDEO" -> 取 "sb"
-    const prefix = state.detailId.split('_')[0].toLowerCase();
-    if (['sp', 'sb', 'sd'].includes(prefix)) {
-      return prefix as ReportType;
+    // 将后端的大写枚举 (SP, SB...) 转换为 Chat 组件需要的小写类型
+    const type = state.adTypeId.toLowerCase();
+    
+    // 类型守卫: 确保它是合法的 ReportType ('sp' | 'sb' | 'sbv' | 'sd' | 'dsp')
+    if (['sp', 'sb', 'sbv', 'sd', 'dsp'].includes(type)) {
+      return type as ReportType;
     }
-    return 'sp'; // 兜底
-  }, [state.detailId]);
+    
+    return 'sp'; // 再次兜底
+  }, [state.adTypeId]);
 
   // =========================================
   // 4. 渲染视图 (Render)
@@ -126,11 +130,10 @@ export default function DeepDive() {
               />
            </div>
 
-           {/* RIGHT COLUMN: AI Chat Terminal (Real Data Integrated) */}
+           {/* RIGHT COLUMN: AI Chat Terminal */}
            <div className="flex-1 h-full min-h-[600px]">
               <DeepDiveChat 
                 activeType={activeBroadType} 
-                // --- 真实数据 Props ---
                 messages={messages}
                 isStreaming={isStreaming}
                 streamingContent={streamingContent}

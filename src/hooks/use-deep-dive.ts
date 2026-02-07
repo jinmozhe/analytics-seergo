@@ -1,13 +1,15 @@
 // src/hooks/use-deep-dive.ts
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
     type ReportAPIItem,
     type TimeOption,
-    type CategoryOption,
+    type AdTypeOption,
+    type ReportTypeOption,
     type DetailOption,
     type DeepDiveState
 } from "@/types/deep-dive";
 import {
+    AD_TYPE_MAP,
     REPORT_TYPE_MAP,
     REPORT_SOURCE_MAP,
     UNKNOWN_REPORT_CONFIG
@@ -15,59 +17,112 @@ import {
 
 export function useDeepDive(reports: ReportAPIItem[]) {
     // =========================================
-    // 1. 核心状态管理 (State)
+    // 1. 核心状态管理 (Raw State)
     // =========================================
     const [timeId, setTimeId] = useState<string>("");
-    const [categoryId, setCategoryId] = useState<string>("");
+    const [adTypeId, setAdTypeId] = useState<string>("");
+    const [reportTypeId, setReportTypeId] = useState<string>("");
     const [detailId, setDetailId] = useState<string>("");
 
     // =========================================
-    // 2. 级联选项计算 (Cascading Logic)
+    // 2. 级联选项计算 (Derived State & Cascading Logic)
     // =========================================
 
-    // --- Step A: 计算周期选项 (Time Options) ---
-    // 逻辑: 遍历所有报告，提取唯一的 period_start + period_end 组合
+    // --- Level 1: Time ---
+
+    // A. 计算选项
     const timeOptions = useMemo<TimeOption[]>(() => {
         const map = new Map<string, TimeOption>();
 
         reports.forEach((item) => {
-            // 生成唯一 ID (例如: "2026-01-26|2026-02-01")
             const id = `${item.period_start}|${item.period_end}`;
 
             if (!map.has(id)) {
-                // 简单的周次格式化逻辑 (生产环境可以用 date-fns 优化)
-                const startShort = item.period_start.slice(5).replace("-", "/"); // "01/26"
-                const endShort = item.period_end.slice(5).replace("-", "/");     // "02/01"
+                const startShort = item.period_start.slice(5).replace("-", "/");
+                const endShort = item.period_end.slice(5).replace("-", "/");
+
+                // [UPDATED] 直接使用日期范围作为 Label，不再加 "Week of"
+                const rangeLabel = `${startShort} - ${endShort}`;
 
                 map.set(id, {
                     id,
-                    label: `Week of ${startShort}`, // 或者根据业务计算 W05
-                    dateRange: `${startShort} - ${endShort}`,
+                    label: rangeLabel, // e.g. "01/25 - 01/31"
+                    dateRange: rangeLabel,
                     periodStart: item.period_start,
                     periodEnd: item.period_end
                 });
             }
         });
 
-        // 按时间倒序排列 (最新的在前面)
         return Array.from(map.values()).sort((a, b) => {
-            // [修复] 处理可选属性 undefined 的情况，提供空字符串兜底
             const dateA = a.periodStart || "";
             const dateB = b.periodStart || "";
             return dateB.localeCompare(dateA);
         });
     }, [reports]);
 
-    // --- Step B: 计算报告类型选项 (Category Options) ---
-    // 逻辑: 基于当前选中的 timeId，过滤出可用的 report_type
-    const categoryOptions = useMemo<CategoryOption[]>(() => {
-        if (!timeId) return [];
+    // B. 计算当前有效 ID (Active ID)
+    const activeTimeId = useMemo(() => {
+        if (timeId && timeOptions.some(opt => opt.id === timeId)) {
+            return timeId;
+        }
+        return timeOptions.length > 0 ? timeOptions[0].id : "";
+    }, [timeId, timeOptions]);
 
-        const [start, end] = timeId.split("|");
-        const uniqueTypes = new Set<string>();
 
+    // --- Level 2: Ad Type ---
+
+    // A. 计算选项 (依赖 activeTimeId)
+    const adTypeOptions = useMemo<AdTypeOption[]>(() => {
+        if (!activeTimeId) return [];
+        const [start, end] = activeTimeId.split("|");
+
+        const uniqueAdTypes = new Set<string>();
         reports
             .filter(r => r.period_start === start && r.period_end === end)
+            .forEach(r => uniqueAdTypes.add(r.ad_type));
+
+        const sortOrder = ["SP", "SB", "SBV", "SD", "DSP"];
+
+        return Array.from(uniqueAdTypes)
+            .sort((a, b) => {
+                const idxA = sortOrder.indexOf(a);
+                const idxB = sortOrder.indexOf(b);
+                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+            })
+            .map(type => {
+                const config = AD_TYPE_MAP[type] || UNKNOWN_REPORT_CONFIG;
+                return {
+                    id: type,
+                    label: config.label,
+                    icon: config.icon
+                };
+            });
+    }, [reports, activeTimeId]);
+
+    // B. 计算当前有效 ID
+    const activeAdTypeId = useMemo(() => {
+        if (adTypeId && adTypeOptions.some(opt => opt.id === adTypeId)) {
+            return adTypeId;
+        }
+        return adTypeOptions.length > 0 ? adTypeOptions[0].id : "";
+    }, [adTypeId, adTypeOptions]);
+
+
+    // --- Level 3: Report Type ---
+
+    // A. 计算选项 (依赖 activeTimeId + activeAdTypeId)
+    const reportTypeOptions = useMemo<ReportTypeOption[]>(() => {
+        if (!activeTimeId || !activeAdTypeId) return [];
+        const [start, end] = activeTimeId.split("|");
+
+        const uniqueTypes = new Set<string>();
+        reports
+            .filter(r =>
+                r.period_start === start &&
+                r.period_end === end &&
+                r.ad_type === activeAdTypeId
+            )
             .forEach(r => uniqueTypes.add(r.report_type));
 
         return Array.from(uniqueTypes).map(type => {
@@ -75,23 +130,33 @@ export function useDeepDive(reports: ReportAPIItem[]) {
             return {
                 id: type,
                 label: config.label,
-                icon: config.icon // 传递给 UI 使用
+                icon: config.icon
             };
         });
-    }, [reports, timeId]);
+    }, [reports, activeTimeId, activeAdTypeId]);
 
-    // --- Step C: 计算报告明细选项 (Detail Options) ---
-    // 逻辑: 基于当前选中的 timeId + categoryId，过滤出可用的 report_source
+    // B. 计算当前有效 ID
+    const activeReportTypeId = useMemo(() => {
+        if (reportTypeId && reportTypeOptions.some(opt => opt.id === reportTypeId)) {
+            return reportTypeId;
+        }
+        return reportTypeOptions.length > 0 ? reportTypeOptions[0].id : "";
+    }, [reportTypeId, reportTypeOptions]);
+
+
+    // --- Level 4: Detail ---
+
+    // A. 计算选项 (依赖前三级的 active IDs)
     const detailOptions = useMemo<DetailOption[]>(() => {
-        if (!timeId || !categoryId) return [];
-
-        const [start, end] = timeId.split("|");
+        if (!activeTimeId || !activeAdTypeId || !activeReportTypeId) return [];
+        const [start, end] = activeTimeId.split("|");
 
         return reports
             .filter(r =>
                 r.period_start === start &&
                 r.period_end === end &&
-                r.report_type === categoryId
+                r.ad_type === activeAdTypeId &&
+                r.report_type === activeReportTypeId
             )
             .map(r => {
                 const config = REPORT_SOURCE_MAP[r.report_source] || UNKNOWN_REPORT_CONFIG;
@@ -100,64 +165,58 @@ export function useDeepDive(reports: ReportAPIItem[]) {
                     label: config.label
                 };
             });
-    }, [reports, timeId, categoryId]);
+    }, [reports, activeTimeId, activeAdTypeId, activeReportTypeId]);
 
-    // --- Step D: 锁定当前唯一报告 (Current Active Report) ---
+    // B. 计算当前有效 ID
+    const activeDetailId = useMemo(() => {
+        if (detailId && detailOptions.some(opt => opt.id === detailId)) {
+            return detailId;
+        }
+        return detailOptions.length > 0 ? detailOptions[0].id : "";
+    }, [detailId, detailOptions]);
+
+
+    // --- Final Step: 锁定当前唯一报告 ---
     const currentReport = useMemo(() => {
-        if (!timeId || !categoryId || !detailId) return null;
-
-        const [start, end] = timeId.split("|");
+        if (!activeTimeId || !activeAdTypeId || !activeReportTypeId || !activeDetailId) return null;
+        const [start, end] = activeTimeId.split("|");
 
         return reports.find(r =>
             r.period_start === start &&
             r.period_end === end &&
-            r.report_type === categoryId &&
-            r.report_source === detailId
+            r.ad_type === activeAdTypeId &&
+            r.report_type === activeReportTypeId &&
+            r.report_source === activeDetailId
         ) || null;
-    }, [reports, timeId, categoryId, detailId]);
+    }, [reports, activeTimeId, activeAdTypeId, activeReportTypeId, activeDetailId]);
+
 
     // =========================================
-    // 3. 自动初始化与纠错 (Auto-Selection Effects)
+    // 3. 返回状态与操作
     // =========================================
 
-    // Effect 1: 初始化默认选中最新的周期
-    useEffect(() => {
-        if (timeOptions.length > 0 && !timeId) {
-            setTimeId(timeOptions[0].id);
-        }
-    }, [timeOptions, timeId]);
-
-    // Effect 2: 当周期变化时，检查 Category 是否有效，无效则重置为第一个
-    useEffect(() => {
-        if (categoryOptions.length > 0) {
-            const isValid = categoryOptions.some(opt => opt.id === categoryId);
-            if (!isValid) {
-                setCategoryId(categoryOptions[0].id);
-            }
-        } else {
-            setCategoryId("");
-        }
-    }, [categoryOptions, categoryId]);
-
-    // Effect 3: 当类型变化时，检查 Detail 是否有效，无效则重置为第一个
-    useEffect(() => {
-        if (detailOptions.length > 0) {
-            const isValid = detailOptions.some(opt => opt.id === detailId);
-            if (!isValid) {
-                setDetailId(detailOptions[0].id);
-            }
-        } else {
-            setDetailId("");
-        }
-    }, [detailOptions, detailId]);
-
-    // =========================================
-    // 4. 返回状态与操作
-    // =========================================
     return {
-        state: { timeId, categoryId, detailId } as DeepDiveState,
-        actions: { setTimeId, setCategoryId, setDetailId },
-        options: { timeOptions, categoryOptions, detailOptions },
+        state: {
+            timeId: activeTimeId,
+            adTypeId: activeAdTypeId,
+            reportTypeId: activeReportTypeId,
+            detailId: activeDetailId
+        } as DeepDiveState,
+
+        actions: {
+            setTimeId,
+            setAdTypeId,
+            setReportTypeId,
+            setDetailId
+        },
+
+        options: {
+            timeOptions,
+            adTypeOptions,
+            reportTypeOptions,
+            detailOptions
+        },
+
         currentReport
     };
 }

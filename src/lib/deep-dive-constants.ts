@@ -5,8 +5,11 @@ import {
     Layers,
     FileText,
     Video,
-    Users,
     Box,
+    Megaphone,    // For SB (品牌推广)
+    BoxSelect,    // For SP (商品推广)
+    MonitorPlay,  // For SD (展示推广)
+    Globe,        // For DSP (全域流量)
     type LucideIcon
 } from "lucide-react";
 
@@ -21,7 +24,34 @@ export interface DeepDiveUIConfig {
 }
 
 /**
- * 1. 报告类型映射 (Report Type Mapping)
+ * 1. 广告类型映射 (Ad Type Mapping) [NEW]
+ * Key: 后端 API 返回的 ad_type
+ */
+export const AD_TYPE_MAP: Record<string, DeepDiveUIConfig> = {
+    "SP": {
+        label: "商品推广 (SP)",
+        icon: BoxSelect
+    },
+    "SB": {
+        label: "品牌推广 (SB)",
+        icon: Megaphone
+    },
+    "SBV": {
+        label: "品牌视频 (SBV)",
+        icon: Video
+    },
+    "SD": {
+        label: "展示推广 (SD)",
+        icon: MonitorPlay
+    },
+    "DSP": {
+        label: "DSP 广告",
+        icon: Globe
+    }
+};
+
+/**
+ * 2. 报告类型映射 (Report Type Mapping)
  * Key: 后端 API 返回的 report_type
  * Value: 前端显示的配置
  */
@@ -37,19 +67,20 @@ export const REPORT_TYPE_MAP: Record<string, DeepDiveUIConfig> = {
 };
 
 /**
- * 2. 报告明细来源映射 (Report Source Mapping)
+ * 3. 报告明细来源映射 (Report Source Mapping) [UPDATED]
  * Key: 后端 API 返回的 report_source
  * Value: 前端显示的配置
+ * 注意：这里不再包含 ad_type 前缀，仅映射维度
  */
 export const REPORT_SOURCE_MAP: Record<string, DeepDiveUIConfig> = {
-    "COMPREHENSIVE": { label: "综合诊断", icon: PieChart },
-    "SP_ASIN": { label: "SP 商品推广 (ASIN)", icon: Layers },
-    "SP_KEYWORD": { label: "SP 关键词", icon: FileText },
-    "SB_ASIN": { label: "SB 品牌推广 (ASIN)", icon: Layers },
-    "SB_KEYWORD": { label: "SB 关键词", icon: FileText },
-    "SB_VIDEO": { label: "SB 视频广告", icon: Video },
-    "SD_AUDIENCE": { label: "SD 受众投放", icon: Users },
-    "SD_OTHER": { label: "SD 其他", icon: Box },
+    "ASIN": {
+        label: "商品/ASIN 维度",
+        icon: Layers
+    },
+    "KEYWORD": {
+        label: "关键词/Targeting",
+        icon: FileText
+    }
 };
 
 /**

@@ -4,14 +4,14 @@ import { Download, AlertCircle } from "lucide-react";
 import { 
   type DeepDiveState, 
   type TimeOption, 
-  type CategoryOption, 
+  type AdTypeOption,
+  type ReportTypeOption, 
   type DetailOption 
 } from "@/types/deep-dive";
 import { REPORT_SOURCE_MAP, UNKNOWN_REPORT_CONFIG } from "@/lib/deep-dive-constants";
 
-
 interface DeepDiveConfigProps {
-  // 核心状态
+  // 核心状态 (4层)
   state: DeepDiveState;
   // 状态变更回调
   onChange: (field: keyof DeepDiveState, value: string) => void;
@@ -19,7 +19,8 @@ interface DeepDiveConfigProps {
   // 动态选项 (由 Hook 计算得出)
   options: {
     timeOptions: TimeOption[];
-    categoryOptions: CategoryOption[];
+    adTypeOptions: AdTypeOption[];
+    reportTypeOptions: ReportTypeOption[];
     detailOptions: DetailOption[];
   };
 
@@ -38,13 +39,8 @@ export function DeepDiveConfig({
   // 处理下载点击
   const handleDownload = () => {
     if (!downloadUrl) return;
-    
     setIsDownloading(true);
-    
-    // 打开新窗口下载
     window.open(downloadUrl, "_blank");
-    
-    // 简单的 UI 反馈延迟重置
     setTimeout(() => setIsDownloading(false), 2000);
   };
 
@@ -69,38 +65,70 @@ export function DeepDiveConfig({
                    <button
                      key={opt.id}
                      onClick={() => onChange('timeId', opt.id)}
+                     // [UPDATED] 调整了样式，确保单行文本居中
                      className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
                        isSelected
                          ? "bg-[#2E77F7] border-[#2E77F7] text-white shadow-[0_0_20px_rgba(46,119,247,0.4)]"
                          : "bg-[#0F172A] border-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
                      }`}
                    >
+                     {/* [UPDATED] 仅显示 Label (现在 Label 已经是日期范围了) */}
                      <span className={isSelected ? "font-bold" : ""}>{opt.label}</span>
-                     <span className={`text-xs ${isSelected ? "text-blue-100" : "text-slate-600"}`}>
-                       ({opt.dateRange})
-                     </span>
                    </button>
                  );
                })}
             </div>
          </div>
 
-         {/* 02. Report Type Selection */}
+         {/* 02. Ad Type Selection */}
          <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-               02. 报告类型 (REPORT TYPE)
+               02. 广告类型 (AD TYPE)
             </h3>
-            <div className="flex flex-wrap gap-4">
-               {options.categoryOptions.length > 0 ? (
-                 options.categoryOptions.map((opt) => {
-                   const isSelected = state.categoryId === opt.id;
-                   // 获取图标组件 (Icon Component)
+            <div className="flex flex-wrap gap-3">
+               {options.adTypeOptions.length > 0 ? (
+                 options.adTypeOptions.map((opt) => {
+                   const isSelected = state.adTypeId === opt.id;
                    const Icon = opt.icon || AlertCircle;
                    
                    return (
                      <button
                        key={opt.id}
-                       onClick={() => onChange('categoryId', opt.id)}
+                       onClick={() => onChange('adTypeId', opt.id)}
+                       className={`px-5 py-3 rounded-xl border text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                         isSelected
+                           ? "bg-[#8b5cf6] border-[#8b5cf6] text-white shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+                           : "bg-[#0F172A] border-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
+                       }`}
+                     >
+                       <Icon className="w-4 h-4" />
+                       {opt.label}
+                     </button>
+                   );
+                 })
+               ) : (
+                 <div className="text-sm text-slate-600 italic px-2">
+                   请先选择时间周期...
+                 </div>
+               )}
+            </div>
+         </div>
+
+         {/* 03. Report Type Selection */}
+         <div className="space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+               03. 报告类型 (REPORT TYPE)
+            </h3>
+            <div className="flex flex-wrap gap-4">
+               {options.reportTypeOptions.length > 0 ? (
+                 options.reportTypeOptions.map((opt) => {
+                   const isSelected = state.reportTypeId === opt.id;
+                   const Icon = opt.icon || AlertCircle;
+                   
+                   return (
+                     <button
+                       key={opt.id}
+                       onClick={() => onChange('reportTypeId', opt.id)}
                        className={`px-6 py-3 rounded-xl border text-sm font-medium transition-all duration-200 flex items-center gap-3 ${
                          isSelected
                            ? "bg-[#6366f1] border-[#6366f1] text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]"
@@ -114,23 +142,22 @@ export function DeepDiveConfig({
                  })
                ) : (
                  <div className="text-sm text-slate-600 italic px-2">
-                   请先选择有效的时间周期...
+                   请先选择广告类型...
                  </div>
                )}
             </div>
          </div>
 
-         {/* 03. Report Detail Selection */}
+         {/* 04. Report Detail Selection */}
          <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-               03. 报告明细 (SELECT REPORT)
+               04. 报告明细 (SELECT REPORT)
             </h3>
             
             {options.detailOptions.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                  {options.detailOptions.map((opt) => {
                    const isSelected = state.detailId === opt.id;
-                   // 从常量映射表中查找对应的图标
                    const config = REPORT_SOURCE_MAP[opt.id] || UNKNOWN_REPORT_CONFIG;
                    const Icon = config.icon;
 

@@ -21,23 +21,37 @@ export function useDeepDiveChat(
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingContent, setStreamingContent] = useState("");
 
+    // [Fix] 引入 prevId 状态，用于在渲染期间检测 ID 变化
+    const [prevReportId, setPrevReportId] = useState<string | null>(null);
+
     // ✅ 关键修复 1: 使用 Ref 来追踪累积的文本，穿透闭包限制
     const contentRef = useRef("");
     const eventSourceRef = useRef<EventSource | null>(null);
 
-    // 1. 切换报告时加载历史记录
+    // [Fix] Pattern: 当 Report ID 变化时，在渲染阶段直接重置状态 (Derived State Pattern)
+    // 这种写法避免了在 useEffect 中同步 setState 导致的 Cascading Renders
+    if (currentReportId !== prevReportId) {
+        setPrevReportId(currentReportId);
+        setMessages([]);
+        setStreamingContent("");
+        setIsStreaming(false);
+        // 乐观更新：如果有新 ID，立即进入 Loading 状态
+        setIsLoadingHistory(!!currentReportId);
+        // 注意：Ref 不建议在 Render 中重置，我们在 Effect 中处理
+    }
+
+    // 1. 切换报告时加载历史记录 (仅处理副作用: Fetching)
     useEffect(() => {
+        // 重置 Ref (Side effect safe)
+        contentRef.current = "";
+
         if (!currentReportId) {
-            setMessages([]);
+            // 状态已在 Render 阶段重置，此处无需操作
             return;
         }
 
         let isMounted = true;
-        setIsLoadingHistory(true);
-        // 切换报告时，重置流状态
-        setIsStreaming(false);
-        setStreamingContent("");
-        contentRef.current = "";
+        // setIsLoadingHistory(true); // 已在 Render 阶段乐观设置
 
         fetchQAHistory(config, currentReportId)
             .then((history: QAMessage[]) => {
@@ -70,7 +84,8 @@ export function useDeepDiveChat(
     const sendMessage = useCallback(async (text: string) => {
         if (!text.trim() || !currentReportId || isStreaming) return;
 
-        const tempId = Date.now().toString();
+        // 使用临时 ID 做乐观更新，避免闪烁
+        const tempId = Date.now().toString(); // 简化处理，生产环境建议用 UUID
 
         // A. 乐观更新
         const userMsg: ChatMessage = {
@@ -102,7 +117,6 @@ export function useDeepDiveChat(
                     setIsStreaming(false);
 
                     // ✅ 关键修复 2: 从 Ref 中读取完整的累积文本
-                    // 而不是读取可能过时的 streamingContent state
                     const finalAnswer = contentRef.current;
 
                     if (finalAnswer) {

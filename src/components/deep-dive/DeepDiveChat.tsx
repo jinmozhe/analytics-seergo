@@ -1,5 +1,5 @@
 // src/components/deep-dive/DeepDiveChat.tsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ComponentPropsWithoutRef } from "react";
 import { Send, Bot, Sparkles, Loader2, User, RefreshCw, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -94,7 +94,8 @@ export function DeepDiveChat({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          code({node, inline, className, children, ...props}: any) {
+          // [FIX] Removed unused 'node', added strict types for props
+          code({ inline, className, children, ...props }: ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
             const match = /language-(\w+)/.exec(className || '')
             return !inline && match ? (
               <div className="rounded-lg overflow-hidden border border-slate-700/50 my-5 bg-[#0d1117]">
